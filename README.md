@@ -7,7 +7,7 @@ Vim-style keyboard navigation for Google and YouTube search results
 - **Vim-style navigation** - Use familiar keys to move through search results
 - **Visual highlighting** - Current selection is clearly highlighted
 - **Smooth scrolling** - Selected results scroll into view automatically
-- **Page navigation** - Jump between search result pages
+- **Page navigation** - Jump between search result pages (Google)
 - **Cross-browser** - Works on Chrome, Edge, Firefox, and other browsers
 
 ## Keybindings
@@ -23,10 +23,15 @@ Vim-style keyboard navigation for Google and YouTube search results
 | `H` | Go to previous page |
 | `L` | Go to next page |
 
+## Supported Sites
+
+- **Google Search** - All regional Google domains (google.com, google.co.uk, etc.)
+- **YouTube** - Search results page (youtube.com/results)
+
 ## How It Works
 
-The extension injects a content script on Google search pages that:
-1. Detects search result elements using robust CSS selectors
+The extension injects a content script on supported search pages that:
+1. Detects the current site and uses appropriate CSS selectors
 2. Listens for keyboard events (ignoring input fields)
 3. Highlights the current selection with a visual indicator
 4. Scrolls the selected result into view

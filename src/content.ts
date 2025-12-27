@@ -1,18 +1,41 @@
+type SiteConfig = {
+  selectors: string;
+  nextPageSelector: string;
+  prevPageSelector: string;
+};
+
+const SITE_CONFIGS: Record<string, SiteConfig> = {
+  google: {
+    selectors: [
+      '#rso > div:has(> *) [data-hveid][data-ved] > [data-snc]',
+      '#rso > :nth-child(1):has(> :nth-child(2)) [data-hveid][data-ved] > div:not([data-snc])',
+      '#rso > div:nth-child(2) [data-hveid][data-ved] > div:not([data-snc])',
+      '#fprs > .Pqkn2e',
+      '#oFNiHe > :not(:has(#fprs)) > p',
+    ].join(', '),
+    nextPageSelector: '#pnnext',
+    prevPageSelector: '#pnprev',
+  },
+  youtube: {
+    selectors: 'ytd-video-renderer, ytd-channel-renderer, ytd-playlist-renderer',
+    nextPageSelector: '',
+    prevPageSelector: '',
+  },
+};
+
+function detectSite(): SiteConfig | null {
+  const hostname = window.location.hostname;
+  if (hostname.includes('google.')) return SITE_CONFIGS.google;
+  if (hostname.includes('youtube.com')) return SITE_CONFIGS.youtube;
+  return null;
+}
+
 class VimyNavigation {
   private pendingKey: string = '';
   private pendingTimeout: number | null = null;
   private currentIndex: number = -1;
   private results: HTMLElement[] = [];
-
-  private static readonly SEARCH_RESULTS_SELECTOR = [
-    '#rso > div:has(> *) [data-hveid][data-ved] > [data-snc]',
-    '#rso > :nth-child(1):has(> :nth-child(2)) [data-hveid][data-ved] > div:not([data-snc])',
-    '#rso > div:nth-child(2) [data-hveid][data-ved] > div:not([data-snc])',
-  ].join(', ');
-
-  private static readonly CANDIDATE_RESULTS_SELECTOR = '#fprs > .Pqkn2e, #oFNiHe > :not(:has(#fprs)) > p';
-
-  private static readonly SELECTORS = `${VimyNavigation.SEARCH_RESULTS_SELECTOR}, ${VimyNavigation.CANDIDATE_RESULTS_SELECTOR}`;
+  private siteConfig: SiteConfig;
 
   private static readonly HIGHLIGHT_STYLE = `
     .vimy-highlight {
@@ -25,12 +48,12 @@ class VimyNavigation {
     }
   `;
 
-  constructor() {
+  constructor(siteConfig: SiteConfig) {
+    this.siteConfig = siteConfig;
     this.injectStyles();
     this.setupKeyboardListener();
     this.setupMutationObserver();
     this.refreshResults();
-    console.log('[Vimy] Extension loaded on Google Search');
   }
 
   private injectStyles(): void {
@@ -58,7 +81,7 @@ class VimyNavigation {
   }
 
   private refreshResults(): void {
-    const elements = document.querySelectorAll<HTMLElement>(VimyNavigation.SELECTORS);
+    const elements = document.querySelectorAll<HTMLElement>(this.siteConfig.selectors);
     this.results = Array.from(elements).filter(el => {
       const link = el.querySelector('a');
       const hasHeight = el.getBoundingClientRect().height > 0;
@@ -190,18 +213,23 @@ class VimyNavigation {
   }
 
   private goToNextPage(): void {
-    const nextLink = document.querySelector<HTMLAnchorElement>('#pnnext');
+    if (!this.siteConfig.nextPageSelector) return;
+    const nextLink = document.querySelector<HTMLAnchorElement>(this.siteConfig.nextPageSelector);
     if (nextLink?.href) {
       window.location.href = nextLink.href;
     }
   }
 
   private goToPrevPage(): void {
-    const prevLink = document.querySelector<HTMLAnchorElement>('#pnprev');
+    if (!this.siteConfig.prevPageSelector) return;
+    const prevLink = document.querySelector<HTMLAnchorElement>(this.siteConfig.prevPageSelector);
     if (prevLink?.href) {
       window.location.href = prevLink.href;
     }
   }
 }
 
-new VimyNavigation();
+const siteConfig = detectSite();
+if (siteConfig) {
+  new VimyNavigation(siteConfig);
+}
