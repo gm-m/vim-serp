@@ -36,6 +36,8 @@ class VimyNavigation {
   private currentIndex: number = -1;
   private results: HTMLElement[] = [];
   private siteConfig: SiteConfig;
+  private countBuffer: string = '';
+  private countTimeout: number | null = null;
 
   private static readonly HIGHLIGHT_STYLE = `
     .vimy-highlight {
@@ -160,6 +162,22 @@ class VimyNavigation {
       this.pendingTimeout = null;
     }
 
+    if (/^[0-9]$/.test(key)) {
+      this.countBuffer += key;
+      if (this.countTimeout) window.clearTimeout(this.countTimeout);
+      this.countTimeout = window.setTimeout(() => {
+        this.countBuffer = '';
+      }, 1000);
+      return true;
+    }
+
+    const count = this.countBuffer ? parseInt(this.countBuffer, 10) : 1;
+    this.countBuffer = '';
+    if (this.countTimeout) {
+      window.clearTimeout(this.countTimeout);
+      this.countTimeout = null;
+    }
+
     if (this.pendingKey === 'g') {
       if (key === 'g') {
         this.goToFirst();
@@ -171,10 +189,10 @@ class VimyNavigation {
 
     switch (key) {
       case 'j':
-        this.moveNext();
+        this.moveNext(count);
         return true;
       case 'k':
-        this.movePrevious();
+        this.movePrevious(count);
         return true;
       case 'G':
         this.goToLast();
@@ -214,15 +232,15 @@ class VimyNavigation {
     }
   }
 
-  private moveNext(): void {
+  private moveNext(count: number = 1): void {
     if (this.results.length === 0) return;
-    this.currentIndex = Math.min(this.currentIndex + 1, this.results.length - 1);
+    this.currentIndex = Math.min(this.currentIndex + count, this.results.length - 1);
     this.highlightCurrent();
   }
 
-  private movePrevious(): void {
+  private movePrevious(count: number = 1): void {
     if (this.results.length === 0) return;
-    this.currentIndex = Math.max(this.currentIndex - 1, 0);
+    this.currentIndex = Math.max(this.currentIndex - count, 0);
     this.highlightCurrent();
   }
 
@@ -331,8 +349,8 @@ class VimyNavigation {
       <div class="vimy-help-content">
         <h2>VimSERP Help</h2>
         <dl>
-          <dt><kbd>j</kbd></dt><dd>Next result</dd>
-          <dt><kbd>k</kbd></dt><dd>Previous result</dd>
+          <dt><kbd>j</kbd> / <kbd>5j</kbd></dt><dd>Next result (with count)</dd>
+          <dt><kbd>k</kbd> / <kbd>5k</kbd></dt><dd>Previous result (with count)</dd>
           <dt><kbd>gg</kbd></dt><dd>First result</dd>
           <dt><kbd>G</kbd></dt><dd>Last result</dd>
           <dt><kbd>Enter</kbd> / <kbd>o</kbd></dt><dd>Open result</dd>

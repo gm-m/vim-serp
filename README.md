@@ -14,8 +14,8 @@ Vim-style keyboard navigation for Google and YouTube search results
 
 | Key | Action |
 |-----|--------|
-| `j` | Move to next result |
-| `k` | Move to previous result |
+| `j` / `5j` | Move to next result (with count) |
+| `k` / `5k` | Move to previous result (with count) |
 | `gg` | Jump to first result |
 | `G` | Jump to last result |
 | `Enter` / `o` | Open selected result |
