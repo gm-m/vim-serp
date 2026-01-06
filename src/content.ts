@@ -46,6 +46,59 @@ class VimyNavigation {
       border-radius: 4px;
       transition: background-color 0.2s ease;
     }
+    .vimy-toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background-color: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 4px;
+      font-size: 14px;
+      z-index: 10000;
+      opacity: 0;
+      transition: transform 0.3s ease, opacity 0.3s ease;
+    }
+    .vimy-toast.visible {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+    #vimy-help-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 10001;
+      display: none;
+    }
+    #vimy-help-overlay .vimy-help-content {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #272822;
+      color: #f8f8f2;
+      padding: 20px;
+      border-radius: 8px;
+      max-width: 80%;
+      max-height: 80%;
+      overflow: auto;
+      font-family: monospace;
+      font-size: 14px;
+    }
+    #vimy-help-overlay h2 { margin-top: 0; color: #66d9ef; }
+    #vimy-help-overlay dl { display: grid; grid-template-columns: max-content 1fr; gap: 8px; }
+    #vimy-help-overlay dt { justify-self: end; }
+    #vimy-help-overlay kbd {
+      display: inline-block;
+      padding: 2px 6px;
+      background: rgba(63, 63, 63, 0.8);
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
   `;
 
   constructor(siteConfig: SiteConfig) {
@@ -147,6 +200,15 @@ class VimyNavigation {
       case 'L':
         this.goToNextPage();
         return true;
+      case 'y':
+        this.copyFocusedUrl();
+        return true;
+      case '?':
+        this.toggleHelp();
+        return true;
+      case 'Escape':
+        this.closeHelp();
+        return false;
       default:
         return false;
     }
@@ -226,6 +288,66 @@ class VimyNavigation {
     if (prevLink?.href) {
       window.location.href = prevLink.href;
     }
+  }
+
+  private copyFocusedUrl(): void {
+    const link = this.getCurrentLink();
+    if (link?.href) {
+      navigator.clipboard.writeText(link.href).then(() => {
+        this.showToast('URL copied to clipboard');
+      });
+    }
+  }
+
+  private showToast(message: string): void {
+    const toast = document.createElement('div');
+    toast.className = 'vimy-toast';
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.classList.add('visible'), 10);
+    setTimeout(() => {
+      toast.classList.remove('visible');
+      setTimeout(() => toast.remove(), 300);
+    }, 2000);
+  }
+
+  private toggleHelp(): void {
+    let overlay = document.getElementById('vimy-help-overlay');
+    if (!overlay) {
+      overlay = this.createHelpOverlay();
+    }
+    overlay.style.display = overlay.style.display === 'block' ? 'none' : 'block';
+  }
+
+  private closeHelp(): void {
+    const overlay = document.getElementById('vimy-help-overlay');
+    if (overlay) overlay.style.display = 'none';
+  }
+
+  private createHelpOverlay(): HTMLElement {
+    const overlay = document.createElement('div');
+    overlay.id = 'vimy-help-overlay';
+    overlay.innerHTML = `
+      <div class="vimy-help-content">
+        <h2>VimSERP Help</h2>
+        <dl>
+          <dt><kbd>j</kbd></dt><dd>Next result</dd>
+          <dt><kbd>k</kbd></dt><dd>Previous result</dd>
+          <dt><kbd>gg</kbd></dt><dd>First result</dd>
+          <dt><kbd>G</kbd></dt><dd>Last result</dd>
+          <dt><kbd>Enter</kbd> / <kbd>o</kbd></dt><dd>Open result</dd>
+          <dt><kbd>O</kbd></dt><dd>Open in new tab</dd>
+          <dt><kbd>y</kbd></dt><dd>Copy URL</dd>
+          <dt><kbd>H</kbd></dt><dd>Previous page (Google)</dd>
+          <dt><kbd>L</kbd></dt><dd>Next page (Google)</dd>
+          <dt><kbd>?</kbd></dt><dd>Toggle help</dd>
+          <dt><kbd>Esc</kbd></dt><dd>Close help</dd>
+        </dl>
+      </div>
+    `;
+    overlay.addEventListener('click', () => this.closeHelp());
+    document.body.appendChild(overlay);
+    return overlay;
   }
 }
 

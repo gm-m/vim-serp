@@ -20,8 +20,10 @@ Vim-style keyboard navigation for Google and YouTube search results
 | `G` | Jump to last result |
 | `Enter` / `o` | Open selected result |
 | `O` | Open selected result in new tab |
+| `y` | Copy selected result URL |
 | `H` | Go to previous page |
 | `L` | Go to next page |
+| `?` | Show help overlay |
 
 ## Supported Sites
 
