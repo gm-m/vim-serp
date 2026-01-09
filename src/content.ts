@@ -33,6 +33,7 @@ function detectSite(): SiteConfig | null {
 class VimyNavigation {
   private pendingKey: string = '';
   private pendingTimeout: number | null = null;
+  private pendingCount: number | null = null;
   private currentIndex: number = -1;
   private results: HTMLElement[] = [];
   private siteConfig: SiteConfig;
@@ -157,6 +158,10 @@ class VimyNavigation {
   }
 
   private handleKeyPress(key: string): boolean {
+    if (['Shift', 'Control', 'Alt', 'Meta'].includes(key)) {
+      return false;
+    }
+
     if (this.pendingTimeout) {
       window.clearTimeout(this.pendingTimeout);
       this.pendingTimeout = null;
@@ -171,7 +176,8 @@ class VimyNavigation {
       return true;
     }
 
-    const count = this.countBuffer ? parseInt(this.countBuffer, 10) : 1;
+    const hasCount = this.countBuffer !== '';
+    const count = hasCount ? parseInt(this.countBuffer, 10) : 1;
     this.countBuffer = '';
     if (this.countTimeout) {
       window.clearTimeout(this.countTimeout);
@@ -180,11 +186,13 @@ class VimyNavigation {
 
     if (this.pendingKey === 'g') {
       if (key === 'g') {
-        this.goToFirst();
+        this.goToFirst(this.pendingCount ?? undefined);
         this.pendingKey = '';
+        this.pendingCount = null;
         return true;
       }
       this.pendingKey = '';
+      this.pendingCount = null;
     }
 
     switch (key) {
@@ -195,12 +203,14 @@ class VimyNavigation {
         this.movePrevious(count);
         return true;
       case 'G':
-        this.goToLast();
+        this.goToLast(hasCount ? count : undefined);
         return true;
       case 'g':
         this.pendingKey = 'g';
+        this.pendingCount = hasCount ? count : null;
         this.pendingTimeout = window.setTimeout(() => {
           this.pendingKey = '';
+          this.pendingCount = null;
         }, 500);
         return false;
       case 'Enter':
@@ -244,15 +254,23 @@ class VimyNavigation {
     this.highlightCurrent();
   }
 
-  private goToFirst(): void {
+  private goToFirst(count?: number): void {
     if (this.results.length === 0) return;
-    this.currentIndex = 0;
+    if (count !== undefined) {
+      this.currentIndex = Math.max(0, Math.min(count - 1, this.results.length - 1));
+    } else {
+      this.currentIndex = 0;
+    }
     this.highlightCurrent();
   }
 
-  private goToLast(): void {
+  private goToLast(count?: number): void {
     if (this.results.length === 0) return;
-    this.currentIndex = this.results.length - 1;
+    if (count !== undefined) {
+      this.currentIndex = Math.max(0, Math.min(count - 1, this.results.length - 1));
+    } else {
+      this.currentIndex = this.results.length - 1;
+    }
     this.highlightCurrent();
   }
 
@@ -351,8 +369,8 @@ class VimyNavigation {
         <dl>
           <dt><kbd>j</kbd> / <kbd>5j</kbd></dt><dd>Next result (with count)</dd>
           <dt><kbd>k</kbd> / <kbd>5k</kbd></dt><dd>Previous result (with count)</dd>
-          <dt><kbd>gg</kbd></dt><dd>First result</dd>
-          <dt><kbd>G</kbd></dt><dd>Last result</dd>
+          <dt><kbd>gg</kbd> / <kbd>5gg</kbd></dt><dd>Jump to result (absolute)</dd>
+          <dt><kbd>G</kbd> / <kbd>5G</kbd></dt><dd>Jump to result (absolute)</dd>
           <dt><kbd>Enter</kbd> / <kbd>o</kbd></dt><dd>Open result</dd>
           <dt><kbd>O</kbd></dt><dd>Open in new tab</dd>
           <dt><kbd>y</kbd></dt><dd>Copy URL</dd>
